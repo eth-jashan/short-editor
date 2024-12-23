@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 type TextOverlayProps = {
   videoSettings: VideoInputSettings;
   onVideoSettingsChange: (value: VideoInputSettings) => void;
@@ -26,16 +27,23 @@ export const TextOverlay = ({
   disable,
 }: TextOverlayProps) => {
   const { textOverlays, setTextOverlays } = useVideoEditor();
-  const [videoEndTime, setVideoEndTime] = useState(0);
+
   const { customStartTime, customEndTime } = videoSettings;
-  const startTime = calculateTimeInHoursMinutesSeconds(customStartTime);
+  const [videoEndTime, setVideoEndTime] = useState(0);
+  const startTime = calculateTimeInHoursMinutesSeconds(0);
   const endTime = calculateTimeInHoursMinutesSeconds(customEndTime);
-  const font: { label: string; value: string }[] = [
+
+  const size: { label: string; value: string }[] = [
     { label: "18", value: "18" },
     { label: "24", value: "24" },
     { label: "32", value: "32" },
     { label: "44", value: "44" },
     { label: "64", value: "64" },
+  ];
+  const fonts: { label: string; value: string }[] = [
+    { label: "arial", value: "arial" },
+    { label: "opensans", value: "opensans" },
+    { label: "roboto", value: "roboto" },
   ];
   useEffect(() => {
     const video = document.getElementById(
@@ -68,8 +76,10 @@ export const TextOverlay = ({
         position: { x: 50, y: 50 },
         size: { width: 200, height: 50 },
         startTime: 0,
-        endTime: videoEndTime,
+        endTime: customEndTime,
         fontSize: 24,
+        color: "#000",
+        font: "arial",
       },
     ]);
   };
@@ -83,6 +93,7 @@ export const TextOverlay = ({
       )
     );
   };
+  console.log(videoSettings);
   return (
     <motion.div
       initial={{ scale: 0.8, opacity: 0 }}
@@ -107,6 +118,7 @@ export const TextOverlay = ({
                 step={1}
                 className="w-full"
                 onValueChange={(value: number[]) => {
+                  console.log("here.....");
                   const [startTime, endTime] = value;
                   updateOverlay(item.id, { ...item, startTime, endTime });
                 }}
@@ -138,6 +150,48 @@ export const TextOverlay = ({
               <p>Font</p>
               <Select
                 disabled={disable}
+                value={item.font?.toString()}
+                onValueChange={(value: string) => {
+                  console.log(value);
+                  updateOverlay(item.id, {
+                    ...item,
+                    font: value,
+                  });
+                  // const videoType = value as VideoFormats;
+                  // onVideoSettingsChange({ ...videoSettings, videoType });
+                }}
+              >
+                <SelectTrigger className="w-[150px] text-sm">
+                  <SelectValue placeholder="Select Format" />
+                </SelectTrigger>
+                <SelectContent>
+                  {fonts.map(({ label, value }) => (
+                    <SelectItem value={value} key={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-between items-center border-b mb-2 pb-2 mt-4">
+              <p>Color</p>
+              <TextField.Root
+                value={item.color}
+                className="mt-4"
+                onChange={({ target }) => {
+                  updateOverlay(item.id, {
+                    ...item,
+                    color: target?.value,
+                  });
+                }}
+                variant="soft"
+                placeholder="Enter color"
+              />
+            </div>
+            <div className="flex justify-between items-center border-b mb-2 pb-2 mt-4">
+              <p>Size</p>
+              <Select
+                disabled={disable}
                 value={item.fontSize?.toString()}
                 onValueChange={(value: string) => {
                   console.log(value);
@@ -153,7 +207,7 @@ export const TextOverlay = ({
                   <SelectValue placeholder="Select Format" />
                 </SelectTrigger>
                 <SelectContent>
-                  {font.map(({ label, value }) => (
+                  {size.map(({ label, value }) => (
                     <SelectItem value={value} key={value}>
                       {label}
                     </SelectItem>

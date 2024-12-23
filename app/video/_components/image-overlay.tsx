@@ -17,7 +17,7 @@ export const ImageOverlay = ({
   onVideoSettingsChange,
   disable,
 }: TextOverlayProps) => {
-  const { imageOverlays, setImageOverlays } = useVideoEditor();
+  const { imageOverlays, addImageOverlay, setImageOverlays } = useVideoEditor();
   const [videoEndTime, setVideoEndTime] = useState(0);
   const { customStartTime, customEndTime } = videoSettings;
   const startTime = calculateTimeInHoursMinutesSeconds(customStartTime);
@@ -54,20 +54,20 @@ export const ImageOverlay = ({
       )
     );
   };
-  const addImageOverlay = (imageFile: File) => {
-    const src = URL.createObjectURL(imageFile);
-    setImageOverlays((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        src,
-        position: { x: 50, y: 50 },
-        size: { width: 150, height: 100 },
-        startTime: 0,
-        endTime: videoEndTime,
-      },
-    ]);
-  };
+  // const addImageOverlay = (imageFile: File) => {
+  //   const src = URL.createObjectURL(imageFile);
+  //   setImageOverlays((prev) => [
+  //     ...prev,
+  //     {
+  //       id: Date.now(),
+  //       src,
+  //       position: { x: 50, y: 50 },
+  //       size: { width: 150, height: 100 },
+  //       startTime: 0,
+  //       endTime: videoEndTime,
+  //     },
+  //   ]);
+  // };
 
   return (
     <motion.div
@@ -101,11 +101,15 @@ export const ImageOverlay = ({
             <div className="flex justify-between">
               <div>
                 <p className="text-gray-500">Start Time</p>
-                <p className="font-medium">{startTime}</p>
+                <p className="font-medium">
+                  {calculateTimeInHoursMinutesSeconds(item.startTime)}
+                </p>
               </div>
               <div>
                 <p className="text-gray-500">End Time</p>
-                <p className="font-medium">{endTime}</p>
+                <p className="font-medium">
+                  {calculateTimeInHoursMinutesSeconds(item.endTime)}
+                </p>
               </div>
             </div>
           </>
@@ -120,8 +124,10 @@ export const ImageOverlay = ({
           Add Image
           <input
             onChange={(event) => {
-              if (event.target.files?.[0])
-                addImageOverlay(event.target.files[0]);
+              if (event.target.files?.[0]) {
+                console.log("uploade file........");
+                addImageOverlay(event.target.files[0], customEndTime);
+              }
             }}
             style={{ display: "none" }}
             id="fileInput"

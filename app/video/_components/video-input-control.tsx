@@ -44,32 +44,7 @@ export const VideoInputControl = ({
           checked={videoSettings.removeAudio}
         />
       </div>
-      {/* <div className={`flex justify-between items-center border-b mb-2 pb-2`}>
-        <p>Condense for Twitter</p>
-        <Switch
-          disabled={disable}
-          onCheckedChange={(value: boolean) =>
-            onVideoSettingsChange({
-              ...videoSettings,
-              twitterCompressionCommand: value,
-            })
-          }
-          checked={videoSettings.twitterCompressionCommand}
-        />
-      </div>
-      <div className="flex justify-between items-center border-b mb-2 pb-2">
-        <p>Condense for Whatsapp Status</p>
-        <Switch
-          disabled={disable}
-          onCheckedChange={(value: boolean) =>
-            onVideoSettingsChange({
-              ...videoSettings,
-              whatsappStatusCompressionCommand: value,
-            })
-          }
-          checked={videoSettings.whatsappStatusCompressionCommand}
-        />
-      </div> */}
+
       {!videoSettings.twitterCompressionCommand &&
         !videoSettings.whatsappStatusCompressionCommand && (
           <>

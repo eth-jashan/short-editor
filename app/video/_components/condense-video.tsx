@@ -3,7 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { CustomDropZone } from "./custom-dropzone";
 import { acceptedVideoFiles } from "@/utils/formats";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FileActions,
   QualityType,
@@ -15,14 +15,18 @@ import { VideoInputDetails } from "./video-input-details";
 import { VideoTrim } from "./video-trim";
 import { VideoInputControl } from "./video-input-control";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { toBlobURL } from "@ffmpeg/util";
+import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import { toast } from "sonner";
 import convertFile from "@/utils/convert";
 import { VideoCondenseProgress } from "./video-condense-progress";
 import { VideoOutputDetails } from "./video-output-details";
 import { TextOverlay } from "./text-overlay";
-import { useVideoEditor } from "@/context/VideoEditorContext";
+import {
+  VideoEditorProvider,
+  useVideoEditor,
+} from "@/context/VideoEditorContext";
 import { ImageOverlay } from "./image-overlay";
+import ReactPlayer from "react-player";
 
 const CondenseVideo = () => {
   const {
@@ -34,7 +38,11 @@ const CondenseVideo = () => {
     progress,
     setProgess,
     imageOverlays,
+    setFfmpegRef,
+    setThumbnails,
+    resetState,
   } = useVideoEditor();
+  const videoContainerRef = useRef<HTMLDivElement>(null);
 
   const [time, setTime] = useState<{
     startTime?: Date;
@@ -42,9 +50,9 @@ const CondenseVideo = () => {
   }>({ elapsedSeconds: 0 });
 
   const [status, setStatus] = useState<
-    "notStarted" | "converted" | "condensing"
+    "notStarted" | "converted" | "processing"
   >("notStarted");
-
+  const [currentTime, setCurrentTime] = useState<number>(0);
   const [videoSettings, setVideoSettings] = useState<VideoInputSettings>({
     quality: QualityType.High,
     videoType: VideoFormats.MP4,
@@ -54,7 +62,7 @@ const CondenseVideo = () => {
     twitterCompressionCommand: false,
     whatsappStatusCompressionCommand: false,
   });
-
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const handleUpload = (file: File) => {
     handleVideoFile({
       fileName: file.name,
@@ -95,8 +103,24 @@ const CondenseVideo = () => {
         "application/wasm"
       ),
     });
+    setFfmpegRef(ffmpegRef);
   };
-
+  const loadWithVideoPersist = async () => {
+    if (videoFile?.file && ffmpegRef.current) {
+      const ffmpeg = ffmpegRef.current;
+      await ffmpeg.load({
+        coreURL: await toBlobURL(
+          `http://localhost:3000/download/ffmpeg-core.js`,
+          "text/javascript"
+        ),
+        wasmURL: await toBlobURL(
+          `http://localhost:3000/download/ffmpeg-core.wasm`,
+          "application/wasm"
+        ),
+      });
+      await generateThumbnails(ffmpeg, videoFile?.file);
+    }
+  };
   const loadWithToast = () => {
     toast.promise(load, {
       loading: "Downloading necessary packages from FFmpeg for offline use.",
@@ -107,13 +131,17 @@ const CondenseVideo = () => {
     });
   };
 
-  useEffect(() => loadWithToast(), []);
-
+  useEffect(() => {
+    loadWithToast();
+  }, []);
+  useEffect(() => {
+    loadWithVideoPersist();
+  }, [videoFile]);
   const condense = async () => {
     if (!videoFile) return;
     try {
       setTime({ ...time, startTime: new Date() });
-      setStatus("condensing");
+      setStatus("processing");
       ffmpegRef.current.on("progress", ({ progress: completion, time }) => {
         const percentage = completion * 100;
         setProgess(percentage);
@@ -121,7 +149,7 @@ const CondenseVideo = () => {
       ffmpegRef.current.on("log", ({ message }) => {
         console.log(message);
       });
-      console.log(textOverlays);
+
       const { url, output, outputBlob } = await convertFile(
         ffmpegRef.current,
         videoFile,
@@ -146,7 +174,44 @@ const CondenseVideo = () => {
       toast.error("Error condensing video");
     }
   };
+  useEffect(() => {
+    console.log(
+      "trim fired........",
+      textOverlays,
+      imageOverlays,
+      videoSettings?.customEndTime,
+      videoSettings?.customStartTime
+    );
+  }, [videoSettings]);
+  const generateThumbnails = useCallback(async (ffmpeg: FFmpeg, file: File) => {
+    // setLoading(true);
+    setThumbnails([]);
 
+    const inputVideoName = "input.mp4";
+    const thumbnailPattern = "thumbnail-%03d.png";
+    // loadFFmpeg();
+    if (!ffmpeg) return;
+    // const ffmpeg = ffmpegRef.current;
+    // await ffmpegRef.current?.load();
+    await ffmpeg?.writeFile(inputVideoName, await fetchFile(file));
+
+    await ffmpeg.exec(["-i", inputVideoName, "-vf", "fps=1", thumbnailPattern]);
+
+    const generatedThumbnails: string[] = [];
+    for (let i = 1; ; i++) {
+      const fileName = `thumbnail-${i.toString().padStart(3, "0")}.png`;
+      try {
+        const data = await ffmpeg?.readFile(fileName);
+        const url = URL.createObjectURL(
+          new Blob([data.buffer], { type: "image/png" })
+        );
+        generatedThumbnails.push(url);
+      } catch (error) {
+        break;
+      }
+    }
+    setThumbnails(generatedThumbnails);
+  }, []);
   return (
     <>
       <motion.div
@@ -159,7 +224,13 @@ const CondenseVideo = () => {
         className="border rounded-3xl col-span-5 flex w-full md:h-full bg-gray-50/35"
       >
         {videoFile ? (
-          <VideoDisplay videoUrl={URL.createObjectURL(videoFile.file)} />
+          <VideoDisplay
+            currentTime={currentTime}
+            setCurrentTime={setCurrentTime}
+            videoRef={videoRef}
+            videoUrl={URL.createObjectURL(videoFile.file)}
+            videoSettings={videoSettings}
+          />
         ) : (
           <CustomDropZone
             handleUpload={handleUpload}
@@ -174,9 +245,11 @@ const CondenseVideo = () => {
               <>
                 <VideoInputDetails
                   videoFile={videoFile}
-                  onClear={() => window.location.reload()}
+                  onClear={() => resetState()}
                 />
                 <VideoTrim
+                  currentTime={currentTime}
+                  videoRef={videoRef}
                   disable={disableDuringCompression}
                   onVideoSettingsChange={setVideoSettings}
                   videoSettings={videoSettings}
@@ -193,11 +266,11 @@ const CondenseVideo = () => {
                 />
               </>
             )}
-            <VideoInputControl
+            {/* <VideoInputControl
               disable={disableDuringCompression}
               onVideoSettingsChange={setVideoSettings}
               videoSettings={videoSettings}
-            />
+            /> */}
 
             <motion.div
               layout

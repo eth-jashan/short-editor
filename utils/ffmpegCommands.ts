@@ -83,80 +83,143 @@ const getMP4toMP4Command = (
   textOverlays: TextOverlay[],
   imageOverlays: ImageOverlay[]
 ) => {
-  // let filterComplex = `[0:v]`;
-  // const drawtextFilters = textOverlays.map((overlay) => {
+  // let filterComplex = "";
+  // let inputCount = 0;
+  // let imageInputs: string[] = [];
+  // // Process image overlays
+  // if (imageOverlays.length > 0) {
+  //   imageInputs = imageOverlays.map((overlay) => {
+  //     const { id, src, position, size, startTime, endTime } = overlay;
+  //     const inputLabel0 = `[${inputCount}:v]`;
+  //     const inputLabel = `[${++inputCount}:v]`;
+  //     const overlayLabel = `[img${inputCount}]`;
+  //     filterComplex += `${inputLabel}scale=${size.width}:${size.height}${overlayLabel};`;
+  //     filterComplex += `${inputLabel0}${overlayLabel}overlay=x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`;
+  //     return `overlay${id}.png`;
+  //   });
+  //   filterComplex = `${filterComplex.slice(0, -1)},`;
+  // }
+  // // Process text overlays
+  // textOverlays.forEach((overlay) => {
   //   const { text, fontSize, position, startTime, endTime } = overlay;
-  //   return `drawtext=/arial.ttf:text='${text}':fontcolor=black:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})`;
+  //   filterComplex += `drawtext=fontfile=/arial.ttf:text='${text}':fontcolor=black:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`;
   // });
-  // // Join all drawtext filters with commas
-  // const filterComplex = drawtextFilters.join(",");
-  // const ffmpegCommand = [
-  //   "-i",
-  //   input,
-  //   "-vf",
-  //   filterComplex,
-  //   "-ss",
-  //   videoSettings.customStartTime.toString(),
-  //   "-to",
-  //   videoSettings.customEndTime.toString(),
-  //   "-c:v",
-  //   "libx264",
-  //   "-crf",
-  //   "23",
-  //   "-preset",
-  //   "medium",
-  //   "-c:a",
-  //   "aac",
-  //   "-b:a",
-  //   "128k",
-  //   output,
-  // ];
-  // return ffmpegCommand;
-  let filterComplex = "";
-  let inputCount = 0;
-
-  // Process image overlays
-  const imageInputs = imageOverlays.map((overlay) => {
-    const { id, src, position, size, startTime, endTime } = overlay;
-    const inputLabel0 = `[${inputCount}:v]`;
-    const inputLabel = `[${++inputCount}:v]`;
-    const overlayLabel = `[img${inputCount}]`;
-    filterComplex += `${inputLabel}scale=${size.width}:${size.height}${overlayLabel};`;
-    filterComplex += `${inputLabel0}${overlayLabel}overlay=x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`;
-    return `overlay${id}.png`;
-  });
-  filterComplex = `${filterComplex.slice(0, -1)},`;
-  // Process text overlays
-  textOverlays.forEach((overlay) => {
-    const { text, fontSize, position, startTime, endTime } = overlay;
-    filterComplex += `drawtext=fontfile=/arial.ttf:text='${text}':fontcolor=black:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`;
-  });
 
   // Remove the trailing semicolon
-  filterComplex = `${filterComplex.slice(0, -1)}`;
+  // filterComplex = `${filterComplex.slice(0, -1)}`;
+  let filterComplex = "";
+  let inputCount = 0;
+  let imageInputs: string[] = [];
 
-  const ffmpegCommand = [
-    "-i",
-    input,
-    ...imageInputs.flatMap((src) => ["-i", src]),
-    "-filter_complex",
-    filterComplex,
-    "-ss",
-    videoSettings.customStartTime.toString(),
-    "-to",
-    videoSettings.customEndTime.toString(),
-    "-c:v",
-    "libx264",
-    "-crf",
-    "23",
-    "-preset",
-    "medium",
-    "-c:a",
-    "aac",
-    "-b:a",
-    "128k",
-    output,
-  ];
+  // Process image overlays
+  if (imageOverlays.length > 0) {
+    imageInputs = imageOverlays.map((overlay, index) => {
+      const { id, src, position, size, startTime, endTime } = overlay;
+      const inputLabel = `[${++inputCount}:v]`;
+      const overlayLabel = `[img${inputCount}]`;
+      const previousLabel = index === 0 ? "[0:v]" : `[tmp${index}]`;
+      const currentLabel = `[tmp${index + 1}]`;
+
+      // Add scale for the current overlay image
+      filterComplex += `${inputLabel}scale=${size.width}:${size.height}${overlayLabel};`;
+
+      // Add overlay with proper chaining
+      filterComplex +=
+        index + 1 === imageOverlays.length
+          ? `${previousLabel}${overlayLabel}overlay=x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`
+          : `${previousLabel}${overlayLabel}overlay=x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})'${currentLabel};`;
+
+      return `overlay${id}.png`; // Return the source of the overlay image
+    });
+    filterComplex = `${filterComplex.slice(0, -1)},`;
+  }
+
+  if (textOverlays.length > 1) {
+    // Process text overlays
+    if (imageOverlays.length > 0) {
+      textOverlays.forEach((overlay, index) => {
+        const previousLabel = `[tmp${index + imageOverlays.length}]`;
+        const currentLabel = `[tmp${index + 1 + imageOverlays.length}]`;
+        const { text, font, fontSize, color, position, startTime, endTime } =
+          overlay;
+        filterComplex +=
+          index + 1 === textOverlays.length
+            ? `${previousLabel}drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`
+            : `${previousLabel}drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})'${currentLabel};`;
+      });
+    } else {
+      textOverlays.forEach((overlay, index) => {
+        const previousLabel = `[tmp${index}]`;
+        const currentLabel = `[tmp${index + 1}]`;
+        const { text, fontSize, font, position, color, startTime, endTime } =
+          overlay;
+        filterComplex +=
+          index + 1 === textOverlays.length
+            ? `${previousLabel}drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`
+            : index === 0
+            ? `[0:v]drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})'${currentLabel};`
+            : `${previousLabel}drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})'${currentLabel};`;
+      });
+      // filterComplex = `[0:v]${filterComplex}`;
+    }
+  } else {
+    // Process text overlays
+    textOverlays.forEach((overlay, index) => {
+      const previousLabel = `[tmp${index}]`;
+      const currentLabel = `[tmp${index + 1}]`;
+      const { text, fontSize, position, font, color, startTime, endTime } =
+        overlay;
+      filterComplex += `drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`;
+    });
+  }
+
+  // Trim the trailing semicolon
+  filterComplex = filterComplex.slice(0, -1);
+  const ffmpegCommand =
+    imageInputs?.length > 0
+      ? [
+          "-i",
+          input,
+          ...imageInputs.flatMap((src) => ["-i", src]),
+          "-filter_complex",
+          filterComplex,
+          "-ss",
+          videoSettings.customStartTime.toString(),
+          "-to",
+          videoSettings.customEndTime.toString(),
+          // "-c:v",
+          // "libx264",
+          // "-crf",
+          // "23",
+          // "-preset",
+          // "medium",
+          // "-c:a",
+          // "aac",
+          // "-b:a",
+          // "128k",
+          output,
+        ]
+      : [
+          "-i",
+          input,
+          "-filter_complex",
+          filterComplex,
+          "-ss",
+          videoSettings.customStartTime.toString(),
+          "-to",
+          videoSettings.customEndTime.toString(),
+          // "-c:v",
+          // "libx264",
+          // "-crf",
+          // "23",
+          // "-preset",
+          // "medium",
+          // "-c:a",
+          // "aac",
+          // "-b:a",
+          // "128k",
+          output,
+        ];
   console.log(JSON.stringify(ffmpegCommand), filterComplex);
   return ffmpegCommand;
 };

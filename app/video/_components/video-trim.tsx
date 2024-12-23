@@ -1,21 +1,29 @@
 import { VideoInputSettings } from "@/utils/types";
 import { motion } from "framer-motion";
 import { VideoSlider } from "../../../components/ui/video-slider";
-import { useEffect, useState } from "react";
+import { MutableRefObject, useEffect, useState } from "react";
 import { calculateTimeInHoursMinutesSeconds } from "../../../utils/timeConverter";
+import { useVideoEditor } from "@/context/VideoEditorContext";
+import { PauseIcon, PlayIcon, ResetIcon } from "@radix-ui/react-icons";
 
 type VideoTrimProps = {
   videoSettings: VideoInputSettings;
   onVideoSettingsChange: (value: VideoInputSettings) => void;
   disable: boolean;
+  videoRef: MutableRefObject<HTMLVideoElement | null>;
+  currentTime: number;
 };
 
 export const VideoTrim = ({
   videoSettings,
+  videoRef,
   onVideoSettingsChange,
   disable,
+  currentTime,
 }: VideoTrimProps) => {
+  const [play, setPlay] = useState(false);
   const [videoEndTime, setVideoEndTime] = useState(0);
+  const { thumbnails } = useVideoEditor();
   const { customStartTime, customEndTime } = videoSettings;
   const startTime = calculateTimeInHoursMinutesSeconds(customStartTime);
   const endTime = calculateTimeInHoursMinutesSeconds(customEndTime);
@@ -41,6 +49,7 @@ export const VideoTrim = ({
       };
     }
   }, []);
+  // console.log("play", videoSettings);
   return (
     <motion.div
       initial={{ scale: 0.8, opacity: 0 }}
@@ -53,6 +62,45 @@ export const VideoTrim = ({
       <div className="text-sm">
         <div className="flex justify-between items-center border-b mb-2 pb-2">
           <p>Trim Video</p>
+        </div>
+        <div className="flex items-center mb-2 pb-2">
+          <ResetIcon
+            onClick={() => {
+              let time = 0;
+              if (videoRef.current) {
+                videoRef.current.currentTime = time;
+                videoRef.current?.pause();
+                setPlay(false);
+              }
+            }}
+            width={24} // Set custom width
+            height={24} // Set custom height
+            style={{ cursor: "pointer" }} // Add custom styles if needed
+          />
+          {!play ? (
+            <PlayIcon
+              onClick={() => {
+                videoRef.current?.play();
+                setPlay(!play);
+              }}
+              width={24} // Set custom width
+              height={24} // Set custom height
+              style={{ cursor: "pointer" }} // Add custom styles if needed
+            />
+          ) : (
+            <PauseIcon
+              onClick={() => {
+                videoRef.current?.pause();
+                setPlay(!play);
+              }}
+              width={24} // Set custom width
+              height={24} // Set custom height
+              style={{ cursor: "pointer" }} // Add custom styles if needed
+            />
+          )}
+          <p className="ml-4">
+            {calculateTimeInHoursMinutesSeconds(currentTime ?? 0)}
+          </p>
         </div>
         <div className="flex justify-between items-center border-b mb-2 pb-2">
           <VideoSlider
@@ -80,6 +128,27 @@ export const VideoTrim = ({
             <p className="text-gray-500">End Time</p>
             <p className="font-medium">{endTime}</p>
           </div>
+        </div>
+        <div className="thumbnails flex overflow-x-auto mt-4 relative">
+          {thumbnails
+            ?.slice(
+              videoSettings?.customStartTime,
+              videoSettings?.customEndTime
+            )
+            .map((thumbnail, index) => (
+              <img
+                key={index}
+                src={thumbnail}
+                alt={`Thumbnail ${index}`}
+                className="w-6 h-auto border border-gray-300"
+                onClick={() => {
+                  const time = index + 1; // Each thumbnail represents a second
+                  if (videoRef.current) {
+                    videoRef.current.currentTime = time;
+                  }
+                }}
+              />
+            ))}
         </div>
       </div>
     </motion.div>

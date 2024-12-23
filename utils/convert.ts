@@ -58,6 +58,18 @@ export default async function convertFile(
       "https://raw.githubusercontent.com/ffmpegwasm/testdata/master/arial.ttf"
     )
   );
+  await ffmpeg.writeFile(
+    "opensans.ttf",
+    await fetchFile(
+      "https://raw.githubusercontent.com/eth-jashan/fonts/main/opensans.ttf"
+    )
+  );
+  await ffmpeg.writeFile(
+    "roboto.ttf",
+    await fetchFile(
+      "https://raw.githubusercontent.com/eth-jashan/fonts/main/Roboto-Regular.ttf"
+    )
+  );
   console.log("Font file loaded");
 
   const command = customVideoCompressionCommand(
