@@ -43,15 +43,77 @@ interface VideoEditorContextType {
   setThumbnails: (fileUrls: string[]) => void;
   setTextOverlays: (overlay: TextOverlay[]) => void;
   setImageOverlays: (overlay: ImageOverlay[]) => void;
-  videoFile: FileActions;
-  setVideoFile: (file: FileActions) => void;
+  videoFile: FileActions | null;
+  setVideoFile: (file: FileActions | null) => void;
   progress: number;
   setProgess: (progress: number) => void;
+  handleVideoFile: (file: FileActions | null) => Promise<void>;
 }
 
 const VideoEditorContext = createContext<VideoEditorContextType | undefined>(
   undefined
 );
+
+async function openDatabase() {
+  return new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open("VideoEditorDB", 1);
+
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains("files")) {
+        db.createObjectStore("files", { keyPath: "id" });
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function saveFileToDB(file: File) {
+  const db = await openDatabase();
+  return new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction("files", "readwrite");
+    const store = transaction.objectStore("files");
+
+    const fileData = {
+      id: "uploadedFile",
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      data: file, // The actual file blob
+    };
+
+    const request = store.put(fileData);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function getFileFromDB() {
+  const db = await openDatabase();
+  return new Promise<any>((resolve, reject) => {
+    const transaction = db.transaction("files", "readonly");
+    const store = transaction.objectStore("files");
+    const request = store.get("uploadedFile");
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function deleteFileFromDB() {
+  const db = await openDatabase();
+  return new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction("files", "readwrite");
+    const store = transaction.objectStore("files");
+    const request = store.delete("uploadedFile");
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
 
 export function VideoEditorProvider({
   children,
@@ -65,28 +127,9 @@ export function VideoEditorProvider({
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [duration, setDuration] = useState<number>(0);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false); // New loading flag
-  const [videoFile, setVideoFile] = useState<FileActions>();
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [videoFile, setVideoFile] = useState<FileActions | null>(null);
   const [progress, setProgess] = useState<number>(0);
-
-  const [time, setTime] = useState<{
-    startTime?: Date;
-    elapsedSeconds?: number;
-  }>({ elapsedSeconds: 0 });
-  const [status, setStatus] = useState<
-    "notStarted" | "converted" | "condensing"
-  >("notStarted");
-
-  const [videoSettings, setVideoSettings] = useState<VideoInputSettings>({
-    quality: QualityType.High,
-    videoType: VideoFormats.MP4,
-    customEndTime: 0,
-    customStartTime: 0,
-    removeAudio: false,
-    twitterCompressionCommand: false,
-    whatsappStatusCompressionCommand: false,
-  });
-  // Load state from localStorage when the component mounts
 
   useEffect(() => {
     const savedState = localStorage.getItem("VideoEditorState");
@@ -100,35 +143,73 @@ export function VideoEditorProvider({
       setDuration(parsedState.duration || 0);
       setThumbnails(parsedState.thumbnails || []);
     }
-    setIsLoaded(true); // Mark as loaded after setting state
+
+    const loadFile = async () => {
+      const savedFile = await getFileFromDB();
+      if (savedFile) {
+        const fileActions: FileActions = {
+          file: savedFile.data,
+          fileName: savedFile.name,
+          fileSize: savedFile.size,
+          fileType: savedFile.type,
+          from: "local",
+          url: URL.createObjectURL(savedFile.data),
+        };
+        handleVideoFile(fileActions);
+      }
+    };
+
+    loadFile();
+    setIsLoaded(true);
   }, []);
 
-  // Persist state to localStorage only after loading completes
-  // useEffect(() => {
-  //   if (!isLoaded) return; // Prevent persistence until initial state is loaded
+  useEffect(() => {
+    if (!isLoaded) return;
 
-  //   const stateToSave = {
-  //     trimStart,
-  //     trimEnd,
-  //     textOverlays,
-  //     imageOverlays,
-  //     videoUrl,
-  //     duration,
-  //     thumbnails,
-  //   };
+    const stateToSave = {
+      trimStart,
+      trimEnd,
+      textOverlays,
+      imageOverlays,
+      videoUrl,
+      duration,
+      thumbnails,
+    };
 
-  //   console.log("Persisting state:", stateToSave);
-  //   localStorage.setItem("VideoEditorState", JSON.stringify(stateToSave));
-  // }, [
-  //   isLoaded,
-  //   trimStart,
-  //   trimEnd,
-  //   textOverlays,
-  //   imageOverlays,
-  //   videoUrl,
-  //   duration,
-  //   thumbnails,
-  // ]);
+    localStorage.setItem("VideoEditorState", JSON.stringify(stateToSave));
+  }, [
+    isLoaded,
+    trimStart,
+    trimEnd,
+    textOverlays,
+    imageOverlays,
+    videoUrl,
+    duration,
+    thumbnails,
+  ]);
+
+  const handleVideoFile = async (fileActions: FileActions | null) => {
+    if (fileActions) {
+      // const fileActions: FileActions = {
+      //   file,
+      //   fileName: file.name,
+      //   fileSize: file.size,
+      //   fileType: file.type,
+      //   from: "local",
+      //   url: URL.createObjectURL(file),
+      // };
+
+      try {
+        await saveFileToDB(fileActions.file);
+        setVideoFile(fileActions);
+      } catch (error) {
+        console.error("Error saving file to IndexedDB:", error);
+      }
+    } else {
+      await deleteFileFromDB();
+      setVideoFile(null);
+    }
+  };
 
   const addTextOverlay = (overlay: TextOverlay) => {
     setTextOverlays((prev) => [...prev, overlay]);
@@ -159,6 +240,7 @@ export function VideoEditorProvider({
         setImageOverlays,
         videoFile,
         setVideoFile,
+        handleVideoFile,
         progress,
         setProgess,
       }}

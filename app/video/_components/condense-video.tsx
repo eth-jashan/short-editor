@@ -30,6 +30,7 @@ const CondenseVideo = () => {
     setTextOverlays,
     videoFile,
     setVideoFile,
+    handleVideoFile,
     progress,
     setProgess,
     imageOverlays,
@@ -55,7 +56,7 @@ const CondenseVideo = () => {
   });
 
   const handleUpload = (file: File) => {
-    setVideoFile({
+    handleVideoFile({
       fileName: file.name,
       fileSize: file.size,
       from: file.name.slice(((file.name.lastIndexOf(".") - 1) >>> 0) + 2),
@@ -128,7 +129,7 @@ const CondenseVideo = () => {
         textOverlays,
         imageOverlays
       );
-      setVideoFile({
+      handleVideoFile({
         ...videoFile,
         url,
         output,
