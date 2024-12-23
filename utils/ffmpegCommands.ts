@@ -1,4 +1,4 @@
-import { TextOverlay } from "@/context/VideoEditorContext";
+import { ImageOverlay, TextOverlay } from "@/context/VideoEditorContext";
 import { getFileExtension } from "./convert";
 import { VideoFormats, VideoInputSettings } from "./types";
 
@@ -61,48 +61,85 @@ export const customVideoCompressionCommand = (
   input: string,
   output: string,
   videoSettings: VideoInputSettings,
-  textOverlays: TextOverlay[]
+  textOverlays: TextOverlay[],
+  imageOverlays: ImageOverlay[]
 ): string[] => {
   const inputType = getFileExtension(input);
-  console.log("custom setting", inputType);
-  // if (inputType === "mp4") {
-  return getMP4toMP4Command(input, output, videoSettings, textOverlays);
-  // } else {
-  //   switch (videoSettings.videoType) {
-  //     case VideoFormats.MP4:
-  //       return getMP4Command(input, output, videoSettings);
-  //     case VideoFormats.AVI:
-  //       return getAVICommand(input, output, videoSettings);
-  //     case VideoFormats.MKV:
-  //       return getMKVCommand(input, output, videoSettings);
-  //     case VideoFormats.MOV:
-  //       return getMOVCommand(input, output, videoSettings);
-  //     default:
-  //       return ["-i", input, output];
-  //   }
-  // }
+  console.log("custom setting", imageOverlays);
+
+  return getMP4toMP4Command(
+    input,
+    output,
+    videoSettings,
+    textOverlays,
+    imageOverlays
+  );
 };
 
 const getMP4toMP4Command = (
   input: string,
   output: string,
   videoSettings: VideoInputSettings,
-  textOverlays: TextOverlay[]
+  textOverlays: TextOverlay[],
+  imageOverlays: ImageOverlay[]
 ) => {
-  // Construct the drawtext filters for each text overlay
-  const drawtextFilters = textOverlays.map((overlay) => {
+  // let filterComplex = `[0:v]`;
+  // const drawtextFilters = textOverlays.map((overlay) => {
+  //   const { text, fontSize, position, startTime, endTime } = overlay;
+  //   return `drawtext=/arial.ttf:text='${text}':fontcolor=black:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})`;
+  // });
+  // // Join all drawtext filters with commas
+  // const filterComplex = drawtextFilters.join(",");
+  // const ffmpegCommand = [
+  //   "-i",
+  //   input,
+  //   "-vf",
+  //   filterComplex,
+  //   "-ss",
+  //   videoSettings.customStartTime.toString(),
+  //   "-to",
+  //   videoSettings.customEndTime.toString(),
+  //   "-c:v",
+  //   "libx264",
+  //   "-crf",
+  //   "23",
+  //   "-preset",
+  //   "medium",
+  //   "-c:a",
+  //   "aac",
+  //   "-b:a",
+  //   "128k",
+  //   output,
+  // ];
+  // return ffmpegCommand;
+  let filterComplex = "";
+  let inputCount = 0;
+
+  // Process image overlays
+  const imageInputs = imageOverlays.map((overlay) => {
+    const { id, src, position, size, startTime, endTime } = overlay;
+    const inputLabel0 = `[${inputCount}:v]`;
+    const inputLabel = `[${++inputCount}:v]`;
+    const overlayLabel = `[img${inputCount}]`;
+    filterComplex += `${inputLabel}scale=${size.width}:${size.height}${overlayLabel};`;
+    filterComplex += `${inputLabel0}${overlayLabel}overlay=x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`;
+    return `overlay${id}.png`;
+  });
+  filterComplex = `${filterComplex.slice(0, -1)},`;
+  // Process text overlays
+  textOverlays.forEach((overlay) => {
     const { text, fontSize, position, startTime, endTime } = overlay;
-    return `drawtext=/arial.ttf:text='${text}':fontcolor=black:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})'`;
+    filterComplex += `drawtext=fontfile=/arial.ttf:text='${text}':fontcolor=black:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`;
   });
 
-  // Join all drawtext filters with commas
-  const filterComplex = drawtextFilters.join(",");
+  // Remove the trailing semicolon
+  filterComplex = `${filterComplex.slice(0, -1)}`;
 
-  // Construct the ffmpeg command
   const ffmpegCommand = [
     "-i",
     input,
-    "-vf",
+    ...imageInputs.flatMap((src) => ["-i", src]),
+    "-filter_complex",
     filterComplex,
     "-ss",
     videoSettings.customStartTime.toString(),
@@ -120,7 +157,7 @@ const getMP4toMP4Command = (
     "128k",
     output,
   ];
-
+  console.log(JSON.stringify(ffmpegCommand), filterComplex);
   return ffmpegCommand;
 };
 

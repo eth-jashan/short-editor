@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  FileActions,
+  QualityType,
+  VideoFormats,
+  VideoInputSettings,
+} from "@/utils/types";
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 export interface TextOverlay {
@@ -37,6 +43,10 @@ interface VideoEditorContextType {
   setThumbnails: (fileUrls: string[]) => void;
   setTextOverlays: (overlay: TextOverlay[]) => void;
   setImageOverlays: (overlay: ImageOverlay[]) => void;
+  videoFile: FileActions;
+  setVideoFile: (file: FileActions) => void;
+  progress: number;
+  setProgess: (progress: number) => void;
 }
 
 const VideoEditorContext = createContext<VideoEditorContextType | undefined>(
@@ -56,7 +66,26 @@ export function VideoEditorProvider({
   const [duration, setDuration] = useState<number>(0);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [isLoaded, setIsLoaded] = useState(false); // New loading flag
+  const [videoFile, setVideoFile] = useState<FileActions>();
+  const [progress, setProgess] = useState<number>(0);
 
+  const [time, setTime] = useState<{
+    startTime?: Date;
+    elapsedSeconds?: number;
+  }>({ elapsedSeconds: 0 });
+  const [status, setStatus] = useState<
+    "notStarted" | "converted" | "condensing"
+  >("notStarted");
+
+  const [videoSettings, setVideoSettings] = useState<VideoInputSettings>({
+    quality: QualityType.High,
+    videoType: VideoFormats.MP4,
+    customEndTime: 0,
+    customStartTime: 0,
+    removeAudio: false,
+    twitterCompressionCommand: false,
+    whatsappStatusCompressionCommand: false,
+  });
   // Load state from localStorage when the component mounts
 
   useEffect(() => {
@@ -128,6 +157,10 @@ export function VideoEditorProvider({
         setThumbnails,
         setTextOverlays,
         setImageOverlays,
+        videoFile,
+        setVideoFile,
+        progress,
+        setProgess,
       }}
     >
       {children}

@@ -4,7 +4,8 @@ import Moveable from "react-moveable";
 import { Rnd } from "react-rnd";
 
 export const VideoDisplay = ({ videoUrl }: { videoUrl: string }) => {
-  const { textOverlays, setTextOverlays } = useVideoEditor();
+  const { textOverlays, imageOverlays, setImageOverlays, setTextOverlays } =
+    useVideoEditor();
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const updateOverlay = (id: string, newProps: Partial<TextOverlay>) => {
     setTextOverlays((overlays) =>
@@ -26,7 +27,16 @@ export const VideoDisplay = ({ videoUrl }: { videoUrl: string }) => {
       position: { x: drag.left, y: drag.top },
     });
   };
-
+  const updateImageOverlay = (
+    id: number,
+    updates: Partial<(typeof imageOverlays)[0]>
+  ) => {
+    setImageOverlays((prev) =>
+      prev.map((overlay) =>
+        overlay.id === id ? { ...overlay, ...updates } : overlay
+      )
+    );
+  };
   return (
     <div ref={videoContainerRef} className="relative h-full w-full rounded-3xl">
       <video
@@ -36,6 +46,38 @@ export const VideoDisplay = ({ videoUrl }: { videoUrl: string }) => {
       >
         <source src={videoUrl} type="video/mp4" />
       </video>
+      {imageOverlays.map((overlay) => (
+        <Rnd
+          key={overlay.id}
+          style={{
+            position: "absolute",
+          }}
+          size={overlay.size}
+          position={overlay.position}
+          onDragStop={(e, d) =>
+            updateImageOverlay(overlay.id, {
+              position: { x: d.x, y: d.y },
+            })
+          }
+          onResizeStop={(e, direction, ref, delta, position) =>
+            updateImageOverlay(overlay.id, {
+              size: { width: ref.offsetWidth, height: ref.offsetHeight },
+              position,
+            })
+          }
+        >
+          <img
+            src={overlay.src}
+            alt="Overlay"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              border: "1px solid #ccc",
+            }}
+          />
+        </Rnd>
+      ))}
       {textOverlays.map((overlay) => (
         <Rnd
           key={overlay.id}

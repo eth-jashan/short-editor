@@ -6,7 +6,7 @@ import {
   twitterCompressionCommand,
   whatsappStatusCompressionCommand,
 } from "./ffmpegCommands";
-import { TextOverlay } from "@/context/VideoEditorContext";
+import { ImageOverlay, TextOverlay } from "@/context/VideoEditorContext";
 
 export function getFileExtension(fileName: string) {
   const regex = /(?:\.([^.]+))?$/;
@@ -30,14 +30,29 @@ export default async function convertFile(
   ffmpeg: FFmpeg,
   actionFile: FileActions,
   videoSettings: VideoInputSettings,
-  textOverlays: TextOverlay[]
+  textOverlays: TextOverlay[],
+  imageOverlays: ImageOverlay[]
 ): Promise<any> {
   const { file, fileName, fileType } = actionFile;
   const output =
     `${removeFileExtension(fileName)}1` + "." + videoSettings.videoType;
-  console.log("out put file......", output);
-  ffmpeg.writeFile(fileName, await fetchFile(file));
-  ffmpeg.writeFile(
+
+  await ffmpeg.writeFile(fileName, await fetchFile(file));
+  // Write each image overlay to the ffmpeg file system
+  for (const overlay of imageOverlays) {
+    try {
+      await ffmpeg.writeFile(
+        `overlay${overlay.id}.png`,
+        await fetchFile(overlay.src)
+      );
+      console.log("File uploaded");
+    } catch (error) {
+      console.log(error);
+    }
+  }
+  // [1:v]scale=397:449[overlay1];[base][overlay1]overlay=x=130:y=562:enable='between(t,0,15.9647)'[base];[base]drawtext=fontfile=/arial.ttf:text='New Texssss':fontcolor=black:fontsize=44:x=137:y=247:enable='between(t,0,15.9647)'[base]
+  //Add font to FileSystem
+  await ffmpeg.writeFile(
     "arial.ttf",
     await fetchFile(
       "https://raw.githubusercontent.com/ffmpegwasm/testdata/master/arial.ttf"
@@ -49,7 +64,8 @@ export default async function convertFile(
     fileName,
     output,
     videoSettings,
-    textOverlays
+    textOverlays,
+    imageOverlays
   );
 
   console.log("command to execute", command.join(" "));

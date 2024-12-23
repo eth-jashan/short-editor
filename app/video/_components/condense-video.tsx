@@ -22,18 +22,28 @@ import { VideoCondenseProgress } from "./video-condense-progress";
 import { VideoOutputDetails } from "./video-output-details";
 import { TextOverlay } from "./text-overlay";
 import { useVideoEditor } from "@/context/VideoEditorContext";
+import { ImageOverlay } from "./image-overlay";
 
 const CondenseVideo = () => {
-  const { textOverlays, setTextOverlays } = useVideoEditor();
-  const [videoFile, setVideoFile] = useState<FileActions>();
-  const [progress, setProgess] = useState<number>(0);
+  const {
+    textOverlays,
+    setTextOverlays,
+    videoFile,
+    setVideoFile,
+    progress,
+    setProgess,
+    imageOverlays,
+  } = useVideoEditor();
+
   const [time, setTime] = useState<{
     startTime?: Date;
     elapsedSeconds?: number;
   }>({ elapsedSeconds: 0 });
+
   const [status, setStatus] = useState<
     "notStarted" | "converted" | "condensing"
   >("notStarted");
+
   const [videoSettings, setVideoSettings] = useState<VideoInputSettings>({
     quality: QualityType.High,
     videoType: VideoFormats.MP4,
@@ -43,6 +53,7 @@ const CondenseVideo = () => {
     twitterCompressionCommand: false,
     whatsappStatusCompressionCommand: false,
   });
+
   const handleUpload = (file: File) => {
     setVideoFile({
       fileName: file.name,
@@ -56,7 +67,6 @@ const CondenseVideo = () => {
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
-
     if (time?.startTime) {
       timer = setInterval(() => {
         const endTime = new Date();
@@ -115,7 +125,8 @@ const CondenseVideo = () => {
         ffmpegRef.current,
         videoFile,
         videoSettings,
-        textOverlays
+        textOverlays,
+        imageOverlays
       );
       setVideoFile({
         ...videoFile,
@@ -170,6 +181,11 @@ const CondenseVideo = () => {
                   videoSettings={videoSettings}
                 />
                 <TextOverlay
+                  disable={disableDuringCompression}
+                  onVideoSettingsChange={setVideoSettings}
+                  videoSettings={videoSettings}
+                />
+                <ImageOverlay
                   disable={disableDuringCompression}
                   onVideoSettingsChange={setVideoSettings}
                   videoSettings={videoSettings}
