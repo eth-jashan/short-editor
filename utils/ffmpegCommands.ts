@@ -94,7 +94,7 @@ const getMP4toMP4Command = (
   //     const inputLabel = `[${++inputCount}:v]`;
   //     const overlayLabel = `[img${inputCount}]`;
   //     filterComplex += `${inputLabel}scale=${size.width}:${size.height}${overlayLabel};`;
-  //     filterComplex += `${inputLabel0}${overlayLabel}overlay=x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`;
+  //     filterComplex += `${inputLabel0}${overlayLabel}overlay=x=${position.x+16}:y=${position.y > 20 ? position.y - 20 : position.y}:enable='between(t,${startTime},${endTime})';`;
   //     return `overlay${id}.png`;
   //   });
   //   filterComplex = `${filterComplex.slice(0, -1)},`;
@@ -102,7 +102,7 @@ const getMP4toMP4Command = (
   // // Process text overlays
   // textOverlays.forEach((overlay) => {
   //   const { text, fontSize, position, startTime, endTime } = overlay;
-  //   filterComplex += `drawtext=fontfile=/arial.ttf:text='${text}':fontcolor=black:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`;
+  //   filterComplex += `drawtext=fontfile=/arial.ttf:text='${text}':fontcolor=black:fontsize=${fontSize}:x=${position.x+16}:y=${position.y > 20 ? position.y - 20 : position.y}:enable='between(t,${startTime},${endTime})';`;
   // });
 
   // Remove the trailing semicolon
@@ -126,15 +126,21 @@ const getMP4toMP4Command = (
       // Add overlay with proper chaining
       filterComplex +=
         index + 1 === imageOverlays.length
-          ? `${previousLabel}${overlayLabel}overlay=x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`
-          : `${previousLabel}${overlayLabel}overlay=x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})'${currentLabel};`;
+          ? `${previousLabel}${overlayLabel}overlay=x=${position.x}:y=${
+              position.y > 20 ? position.y - 20 : position.y
+            }:enable='between(t,${startTime},${endTime})';`
+          : `${previousLabel}${overlayLabel}overlay=x=${position.x}:y=${
+              position.y > 20 ? position.y - 20 : position.y
+            }:enable='between(t,${startTime},${endTime})'${currentLabel};`;
 
       return `overlay${id}.png`; // Return the source of the overlay image
     });
+    console.log("image overlay filter condition", textOverlays.length <= 1);
     filterComplex =
-      textOverlays.length === 0
+      textOverlays.length <= 1
         ? `${filterComplex.slice(0, -1)},`
         : `${filterComplex.slice(0, -1)}[tmp${imageOverlays.length}],`;
+    console.log("image overlay filter", filterComplex);
   }
 
   if (textOverlays.length > 1) {
@@ -147,8 +153,16 @@ const getMP4toMP4Command = (
           overlay;
         filterComplex +=
           index + 1 === textOverlays.length
-            ? `${previousLabel}drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`
-            : `${previousLabel}drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})'${currentLabel};`;
+            ? `${previousLabel}drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${
+                position.x
+              }:y=${
+                position.y > 20 ? position.y - 20 : position.y
+              }:enable='between(t,${startTime},${endTime})';`
+            : `${previousLabel}drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${
+                position.x
+              }:y=${
+                position.y > 20 ? position.y - 20 : position.y
+              }:enable='between(t,${startTime},${endTime})'${currentLabel};`;
       });
     } else {
       textOverlays.forEach((overlay, index) => {
@@ -158,10 +172,22 @@ const getMP4toMP4Command = (
           overlay;
         filterComplex +=
           index + 1 === textOverlays.length
-            ? `${previousLabel}drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`
+            ? `${previousLabel}drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${
+                position.x
+              }:y=${
+                position.y > 20 ? position.y - 20 : position.y
+              }:enable='between(t,${startTime},${endTime})';`
             : index === 0
-            ? `[0:v]drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})'${currentLabel};`
-            : `${previousLabel}drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})'${currentLabel};`;
+            ? `[0:v]drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${
+                position.x
+              }:y=${
+                position.y > 20 ? position.y - 20 : position.y
+              }:enable='between(t,${startTime},${endTime})'${currentLabel};`
+            : `${previousLabel}drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${
+                position.x
+              }:y=${
+                position.y > 20 ? position.y - 20 : position.y
+              }:enable='between(t,${startTime},${endTime})'${currentLabel};`;
       });
       // filterComplex = `[0:v]${filterComplex}`;
     }
@@ -172,7 +198,11 @@ const getMP4toMP4Command = (
       const currentLabel = `[tmp${index + 1}]`;
       const { text, fontSize, position, font, color, startTime, endTime } =
         overlay;
-      filterComplex += `drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${position.x}:y=${position.y}:enable='between(t,${startTime},${endTime})';`;
+      filterComplex += `drawtext=fontfile=/${font}.ttf:text='${text}':fontcolor=${color}:fontsize=${fontSize}:x=${
+        position.x
+      }:y=${
+        position.y > 20 ? position.y - 20 : position.y
+      }:enable='between(t,${startTime},${endTime})';`;
     });
   }
 

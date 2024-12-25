@@ -1,6 +1,11 @@
 "use client";
 
-import { FileActions } from "@/utils/types";
+import {
+  FileActions,
+  QualityType,
+  VideoFormats,
+  VideoInputSettings,
+} from "@/utils/types";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 import React, {
@@ -62,6 +67,8 @@ interface VideoEditorContextType {
   resetState: () => Promise<void>;
   removeImageOverlay: (id: number) => Promise<void>;
   removeTextOverlay: (id: number) => void;
+  videoSettings: VideoInputSettings;
+  setVideoSettings: (setting: VideoInputSettings) => void;
 }
 
 const VideoEditorContext = createContext<VideoEditorContextType | undefined>(
@@ -218,7 +225,15 @@ export function VideoEditorProvider({
   const [ffmpegRef, setFfmpegRef] = useState<MutableRefObject<FFmpeg> | null>(
     null
   );
-
+  const [videoSettings, setVideoSettings] = useState<VideoInputSettings>({
+    quality: QualityType.High,
+    videoType: VideoFormats.MP4,
+    customEndTime: 0,
+    customStartTime: 0,
+    removeAudio: false,
+    twitterCompressionCommand: false,
+    whatsappStatusCompressionCommand: false,
+  });
   useEffect(() => {
     const savedState = localStorage.getItem("VideoEditorState");
     if (savedState) {
@@ -226,7 +241,7 @@ export function VideoEditorProvider({
       setTrimStart(parsedState.trimStart || 0);
       setTrimEnd(parsedState.trimEnd || 0);
       setTextOverlays(parsedState.textOverlays || []);
-
+      setVideoSettings(parsedState.videoSettings);
       setImageOverlays(parsedState.imageOverlays || []);
 
       setVideoUrl(parsedState.videoUrl || null);
@@ -267,7 +282,7 @@ export function VideoEditorProvider({
 
   useEffect(() => {
     if (!isLoaded) return;
-
+    console.log("videoSettings", videoSettings);
     const stateToSave = {
       trimStart,
       trimEnd,
@@ -275,6 +290,7 @@ export function VideoEditorProvider({
       imageOverlays,
       videoUrl,
       duration,
+      videoSettings,
     };
 
     localStorage.setItem("VideoEditorState", JSON.stringify(stateToSave));
@@ -286,6 +302,7 @@ export function VideoEditorProvider({
     imageOverlays,
     videoUrl,
     duration,
+    videoSettings,
   ]);
 
   const handleVideoFile = async (fileActions: FileActions | null) => {
@@ -387,6 +404,8 @@ export function VideoEditorProvider({
         resetState,
         removeTextOverlay,
         removeImageOverlay,
+        videoSettings,
+        setVideoSettings,
       }}
     >
       {children}
