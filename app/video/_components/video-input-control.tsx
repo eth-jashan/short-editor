@@ -31,10 +31,10 @@ export const VideoInputControl = ({
     exit={{ scale: 0.8, opacity: 0 }}
     key={"drag"}
     transition={{ type: "tween" }}
-    className="rounded-2xl px-4 py-3 h-fit bg-gray-100 border border-gray-200"
+    className="rounded-2xl px-4 py-3 h-fit bg-gray-100 border border-none"
   >
     <div className="text-sm">
-      <div className="flex justify-between items-center border-b mb-2 pb-2">
+      {/* <div className="flex justify-between items-center border-b mb-2 pb-2">
         <p>Remove Audio</p>
         <Switch
           disabled={disable}
@@ -43,57 +43,38 @@ export const VideoInputControl = ({
           }
           checked={videoSettings.removeAudio}
         />
-      </div>
+      </div> */}
 
-      {!videoSettings.twitterCompressionCommand &&
-        !videoSettings.whatsappStatusCompressionCommand && (
-          <>
-            <div className="flex justify-between items-center border-b mb-2 pb-2">
-              <p>Quality</p>
-              <Select
-                disabled={disable}
-                value={videoSettings.quality}
-                onValueChange={(value: string) => {
-                  const quality = value as QualityType;
-                  onVideoSettingsChange({ ...videoSettings, quality });
-                }}
-              >
-                <SelectTrigger className="w-[100px] text-sm">
-                  <SelectValue placeholder="Select Quality" />
-                </SelectTrigger>
-                <SelectContent>
-                  {quality.map(({ label, value }) => (
-                    <SelectItem value={value} key={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-between items-center border-b mb-2 pb-2">
-              <p>Format</p>
-              <Select
-                disabled={disable}
-                value={videoSettings.videoType}
-                onValueChange={(value: string) => {
-                  const videoType = value as VideoFormats;
-                  onVideoSettingsChange({ ...videoSettings, videoType });
-                }}
-              >
-                <SelectTrigger className="w-[150px] text-sm">
-                  <SelectValue placeholder="Select Format" />
-                </SelectTrigger>
-                <SelectContent>
-                  {format.map(({ label, value }) => (
-                    <SelectItem value={value} key={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </>
-        )}
+      {
+        <>
+          {/* <div className="flex justify-between items-center border-b mb-2 pb-2">
+            <p>Quality</p>
+            <Select
+              disabled={disable}
+              value={videoSettings.quality}
+              onValueChange={(value: string) => {
+                const quality = value as QualityType;
+                onVideoSettingsChange({ ...videoSettings, quality });
+              }}
+            >
+              <SelectTrigger className="w-[100px] text-sm">
+                <SelectValue placeholder="Select Quality" />
+              </SelectTrigger>
+              <SelectContent>
+                {quality.map(({ label, value }) => (
+                  <SelectItem value={value} key={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div> */}
+          <div className="flex justify-between items-center border-b mb-2 pb-2">
+            <p>Format</p>
+            <p>{videoSettings.videoType}</p>
+          </div>
+        </>
+      }
     </div>
   </motion.div>
 );

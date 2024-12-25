@@ -144,7 +144,7 @@ export const VideoTrim = ({
                 onClick={() => {
                   const time = index + 1; // Each thumbnail represents a second
                   if (videoRef.current) {
-                    videoRef.current.currentTime = time;
+                    videoRef.current.currentTime = time + customStartTime;
                   }
                 }}
               />

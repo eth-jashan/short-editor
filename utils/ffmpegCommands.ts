@@ -114,7 +114,7 @@ const getMP4toMP4Command = (
   // Process image overlays
   if (imageOverlays.length > 0) {
     imageInputs = imageOverlays.map((overlay, index) => {
-      const { id, src, position, size, startTime, endTime } = overlay;
+      const { id, position, size, startTime, endTime } = overlay;
       const inputLabel = `[${++inputCount}:v]`;
       const overlayLabel = `[img${inputCount}]`;
       const previousLabel = index === 0 ? "[0:v]" : `[tmp${index}]`;
@@ -131,7 +131,10 @@ const getMP4toMP4Command = (
 
       return `overlay${id}.png`; // Return the source of the overlay image
     });
-    filterComplex = `${filterComplex.slice(0, -1)},`;
+    filterComplex =
+      textOverlays.length === 0
+        ? `${filterComplex.slice(0, -1)},`
+        : `${filterComplex.slice(0, -1)}[tmp${imageOverlays.length}],`;
   }
 
   if (textOverlays.length > 1) {
@@ -221,143 +224,5 @@ const getMP4toMP4Command = (
           output,
         ];
   console.log(JSON.stringify(ffmpegCommand), filterComplex);
-  return ffmpegCommand;
-};
-
-const getMP4Command = (
-  input: string,
-  output: string,
-  videoSettings: VideoInputSettings
-) => {
-  const ffmpegCommand = [
-    "-i",
-    input,
-    "-c:v",
-    "libx264",
-    "-profile:v",
-    "high",
-    "-level:v",
-    "4.2",
-    "-pix_fmt",
-    "yuv420p",
-    "-r",
-    "30",
-    "-maxrate",
-    "5000k",
-    "-bufsize",
-    "5000k",
-    "-tune",
-    "film",
-    "-ss",
-    videoSettings.customStartTime.toString(),
-    "-to",
-    videoSettings.customEndTime.toString(),
-    "-q:v",
-    videoSettings.quality,
-    "-crf",
-    "18",
-    "-c:v",
-    "libx264",
-    "-preset",
-    "medium",
-    "-f",
-    videoSettings.videoType,
-  ];
-
-  if (!videoSettings.removeAudio) {
-    ffmpegCommand.push("-c:a", "aac", "-b:a", "192k", "-movflags", "faststart");
-  } else {
-    ffmpegCommand.push("-an");
-  }
-  ffmpegCommand.push(output);
-
-  return ffmpegCommand;
-};
-
-const getMOVCommand = (
-  input: string,
-  output: string,
-  videoSettings: VideoInputSettings
-) => {
-  const audioOptions = videoSettings.removeAudio ? [] : ["-c:a", "aac"];
-  const ffmpegCommand = [
-    "-i",
-    input,
-    "-c:v",
-    "libx264",
-    "-crf",
-    videoSettings.quality,
-    ...audioOptions,
-    "-vf",
-    `trim=start=${videoSettings.customStartTime}:end=${videoSettings.customEndTime}`,
-    output,
-  ];
-
-  return ffmpegCommand;
-};
-
-const getMKVCommand = (
-  input: string,
-  output: string,
-  videoSettings: VideoInputSettings
-) => {
-  const audioOptions = videoSettings.removeAudio ? [] : ["-c:a", "aac"];
-  const ffmpegCommand = [
-    "-i",
-    input,
-    "-c:v",
-    "libx264",
-    "-crf",
-    videoSettings.quality,
-    ...audioOptions,
-    "-vf",
-    `trim=start=${videoSettings.customStartTime}:end=${videoSettings.customEndTime}`,
-    output,
-  ];
-
-  return ffmpegCommand;
-};
-
-const getAVICommand = (
-  input: string,
-  output: string,
-  videoSettings: VideoInputSettings
-) => {
-  const audioOptions = videoSettings.removeAudio ? [] : ["-c:a", "aac"];
-  const ffmpegCommand = [
-    "-i",
-    input,
-    "-c:v",
-    "libx264",
-    "-crf",
-    videoSettings.quality,
-    ...audioOptions,
-    "-vf",
-    `trim=start=${videoSettings.customStartTime}:end=${videoSettings.customEndTime}`,
-    output,
-  ];
-
-  return ffmpegCommand;
-};
-
-const getFLVCommand = (
-  input: string,
-  output: string,
-  videoSettings: VideoInputSettings
-) => {
-  const audioOptions = videoSettings.removeAudio ? [] : ["-c:a", "aac"];
-  const ffmpegCommand = [
-    "-i",
-    input,
-    "-c:v",
-    "libx264",
-    "-crf",
-    videoSettings.quality,
-    ...audioOptions,
-    "-vf",
-    `trim=start=${videoSettings.customStartTime}:end=${videoSettings.customEndTime}`,
-    output,
-  ];
-
   return ffmpegCommand;
 };

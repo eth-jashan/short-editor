@@ -60,6 +60,8 @@ interface VideoEditorContextType {
   ffmpegRef: MutableRefObject<FFmpeg>;
   setFfmpegRef: (ffmpeg: MutableRefObject<FFmpeg>) => void;
   resetState: () => Promise<void>;
+  removeImageOverlay: (id: number) => Promise<void>;
+  removeTextOverlay: (id: number) => void;
 }
 
 const VideoEditorContext = createContext<VideoEditorContextType | undefined>(
@@ -323,7 +325,22 @@ export function VideoEditorProvider({
       console.error("Error saving image overlay to IndexedDB:", error);
     }
   };
+  const removeTextOverlay = (id: number) => {
+    setTextOverlays((prev) => prev.filter((overlay) => overlay.id !== id));
+  };
 
+  // Function to remove an image overlay
+  const removeImageOverlay = async (id: number) => {
+    setImageOverlays((prev) => prev.filter((overlay) => overlay.id !== id));
+    const db = await openDatabase();
+    const transaction = db.transaction("files", "readwrite");
+    const store = transaction.objectStore("files");
+    const request = store.delete(id);
+
+    request.onerror = () => {
+      console.error("Failed to delete image overlay from IndexedDB.");
+    };
+  };
   const resetState = async () => {
     setTrimStart(0);
     setTrimEnd(0);
@@ -368,6 +385,8 @@ export function VideoEditorProvider({
         setState,
         ffmpegRef,
         resetState,
+        removeTextOverlay,
+        removeImageOverlay,
       }}
     >
       {children}

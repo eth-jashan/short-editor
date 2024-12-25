@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Cross1Icon, CrossCircledIcon } from "@radix-ui/react-icons";
 
 type TextOverlayProps = {
   videoSettings: VideoInputSettings;
@@ -26,7 +27,7 @@ export const TextOverlay = ({
   onVideoSettingsChange,
   disable,
 }: TextOverlayProps) => {
-  const { textOverlays, setTextOverlays } = useVideoEditor();
+  const { textOverlays, removeTextOverlay, setTextOverlays } = useVideoEditor();
 
   const { customStartTime, customEndTime } = videoSettings;
   const [videoEndTime, setVideoEndTime] = useState(0);
@@ -78,7 +79,7 @@ export const TextOverlay = ({
         startTime: 0,
         endTime: customEndTime,
         fontSize: 24,
-        color: "#000",
+        color: "black",
         font: "arial",
       },
     ]);
@@ -110,6 +111,26 @@ export const TextOverlay = ({
 
         {textOverlays.map((item, index) => (
           <>
+            <div className="mt-4 mb-6 flex flex-row justify-center align-middle items-center">
+              <TextField.Root
+                value={item.text}
+                className="flex-1"
+                onChange={({ target }) => {
+                  updateOverlay(item.id, {
+                    ...item,
+                    text: target?.value,
+                  });
+                }}
+                variant="soft"
+                placeholder="Add text"
+              />
+              <CrossCircledIcon
+                onClick={() => removeTextOverlay(item.id)}
+                width={16} // Set custom width
+                height={16}
+                color="red" // Set custom height
+              />
+            </div>
             <div className="flex justify-between items-center border-b mb-2 pb-2 flex-column">
               <VideoSlider
                 disabled={disable}
@@ -127,25 +148,18 @@ export const TextOverlay = ({
             <div className="flex justify-between">
               <div>
                 <p className="text-gray-500">Start Time</p>
-                <p className="font-medium">{startTime}</p>
+                <p className="font-medium">
+                  {calculateTimeInHoursMinutesSeconds(item.startTime)}
+                </p>
               </div>
               <div>
                 <p className="text-gray-500">End Time</p>
-                <p className="font-medium">{endTime}</p>
+                <p className="font-medium">
+                  {calculateTimeInHoursMinutesSeconds(item.endTime)}
+                </p>
               </div>
             </div>
-            <TextField.Root
-              value={item.text}
-              className="mt-4"
-              onChange={({ target }) => {
-                updateOverlay(item.id, {
-                  ...item,
-                  text: target?.value,
-                });
-              }}
-              variant="soft"
-              placeholder="Add text"
-            />
+
             <div className="flex justify-between items-center border-b mb-2 pb-2 mt-4">
               <p>Font</p>
               <Select
