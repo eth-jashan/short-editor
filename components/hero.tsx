@@ -9,8 +9,8 @@ const Hero = () => (
       Videos Editor
     </h1>
     <h2 className="sm:text-lg max-w-xl mx-auto text-gray-500 text-center mt-9">
-      Eliminate oversized files! Reduce video size by <span>90%</span> without
-      sacrificing quality, all while working offline. Add overlays to your video
+      Add overlays to your video and trim it, without sacrificing quality, all
+      while working offline.
     </h2>
     <div className="flex gap-4 items-center justify-center mt-10 mb-10">
       <Link

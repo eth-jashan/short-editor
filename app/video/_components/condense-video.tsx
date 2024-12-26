@@ -41,8 +41,6 @@ const CondenseVideo = () => {
     setFfmpegRef,
     setThumbnails,
     resetState,
-    videoSettings,
-    setVideoSettings,
   } = useVideoEditor();
   const videoContainerRef = useRef<HTMLDivElement>(null);
 
@@ -55,7 +53,15 @@ const CondenseVideo = () => {
     "notStarted" | "converted" | "processing"
   >("notStarted");
   const [currentTime, setCurrentTime] = useState<number>(0);
-
+  const [videoSettings, setVideoSettings] = useState<VideoInputSettings>({
+    quality: QualityType.High,
+    videoType: VideoFormats.MP4,
+    customEndTime: 0,
+    customStartTime: 0,
+    removeAudio: false,
+    twitterCompressionCommand: false,
+    whatsappStatusCompressionCommand: false,
+  });
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const handleUpload = (file: File) => {
     handleVideoFile({
@@ -168,15 +174,7 @@ const CondenseVideo = () => {
       toast.error("Error condensing video");
     }
   };
-  useEffect(() => {
-    console.log(
-      "trim fired........",
-      textOverlays,
-      imageOverlays,
-      videoSettings?.customEndTime,
-      videoSettings?.customStartTime
-    );
-  }, [videoSettings]);
+
   const generateThumbnails = useCallback(async (ffmpeg: FFmpeg, file: File) => {
     // setLoading(true);
     setThumbnails([]);
