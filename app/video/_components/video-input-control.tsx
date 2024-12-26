@@ -71,7 +71,7 @@ export const VideoInputControl = ({
           </div> */}
           <div className="flex justify-between items-center border-b mb-2 pb-2">
             <p>Format</p>
-            <p>{videoSettings.videoType}</p>
+            <p>{videoSettings?.videoType}</p>
           </div>
         </>
       }

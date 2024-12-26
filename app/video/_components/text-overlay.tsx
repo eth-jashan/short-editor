@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Cross1Icon, CrossCircledIcon } from "@radix-ui/react-icons";
+import { GoogleFontSelect } from "./google-font-select";
 
 type TextOverlayProps = {
   videoSettings: VideoInputSettings;
@@ -204,7 +205,7 @@ export const TextOverlay = ({
             </div>
             <div className="flex justify-between items-center border-b mb-2 pb-2 mt-4">
               <p>Size</p>
-              <Select
+              {/* <Select
                 disabled={disable}
                 value={item.fontSize?.toString()}
                 onValueChange={(value: string) => {
@@ -227,7 +228,17 @@ export const TextOverlay = ({
                     </SelectItem>
                   ))}
                 </SelectContent>
-              </Select>
+              </Select> */}
+              <GoogleFontSelect
+                disabled={disable}
+                value={item.font}
+                onValueChange={(value: string) => {
+                  updateOverlay(item.id, {
+                    ...item,
+                    font: value,
+                  });
+                }}
+              />
             </div>
           </>
         ))}
