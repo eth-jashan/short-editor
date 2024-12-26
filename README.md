@@ -15,7 +15,7 @@ A lightweight and offline-capable video editor built with **FFmpeg.wasm**, enabl
 
 ## Demo
 
-[Demo GIF](path/to/your-gif.gif)
+[Demo GIF](https://github.com/eth-jashan/vide-editor/blob/main/public/demo.gif)
 
 <!-- Include a link to your live demo or a screenshot of the application.
 
