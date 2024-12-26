@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const GOOGLE_FONTS_API_KEY = " AIzaSyCkLB-vnTgr9iNhYYNvypvUi4-ajbKV09o "; // Replace with your Google Fonts API key
+const GOOGLE_FONTS_API_KEY = ""; // Replace with your Google Fonts API key
 const GOOGLE_FONTS_API = `https://www.googleapis.com/webfonts/v1/webfonts?key=${GOOGLE_FONTS_API_KEY}`;
 
 interface FontOption {
