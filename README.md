@@ -15,14 +15,8 @@ A lightweight and offline-capable video editor built with **FFmpeg.wasm**, enabl
 
 ## Demo
 
+[Demo GIF](path/to/your-gif.gif)
+
 <!-- Include a link to your live demo or a screenshot of the application.
 
 ![Demo Screenshot](path/to/screenshot.png) -->
-
-<!-- ## Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/short-video-editor.git
-   cd short-video-editor
-   ``` -->
