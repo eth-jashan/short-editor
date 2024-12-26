@@ -163,30 +163,16 @@ export const TextOverlay = ({
 
             <div className="flex justify-between items-center border-b mb-2 pb-2 mt-4">
               <p>Font</p>
-              <Select
+              <GoogleFontSelect
                 disabled={disable}
-                value={item.font?.toString()}
+                value={item.font}
                 onValueChange={(value: string) => {
-                  console.log(value);
                   updateOverlay(item.id, {
                     ...item,
                     font: value,
                   });
-                  // const videoType = value as VideoFormats;
-                  // onVideoSettingsChange({ ...videoSettings, videoType });
                 }}
-              >
-                <SelectTrigger className="w-[150px] text-sm">
-                  <SelectValue placeholder="Select Format" />
-                </SelectTrigger>
-                <SelectContent>
-                  {fonts.map(({ label, value }) => (
-                    <SelectItem value={value} key={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              />
             </div>
             <div className="flex justify-between items-center border-b mb-2 pb-2 mt-4">
               <p>Color</p>
@@ -205,7 +191,34 @@ export const TextOverlay = ({
             </div>
             <div className="flex justify-between items-center border-b mb-2 pb-2 mt-4">
               <p>Size</p>
-              {/* <Select
+              <Select
+                disabled={disable}
+                value={item.fontSize?.toString()}
+                onValueChange={(value: string) => {
+                  console.log(value);
+                  updateOverlay(item.id, {
+                    ...item,
+                    fontSize: parseInt(value),
+                  });
+                  // const videoType = value as VideoFormats;
+                  // onVideoSettingsChange({ ...videoSettings, videoType });
+                }}
+              >
+                <SelectTrigger className="w-[150px] text-sm">
+                  <SelectValue placeholder="Select Format" />
+                </SelectTrigger>
+                <SelectContent>
+                  {size.map(({ label, value }) => (
+                    <SelectItem value={value} key={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {/* <div className="flex justify-between items-center border-b mb-2 pb-2 mt-4">
+              <p>Size</p> */}
+            {/* <Select
                 disabled={disable}
                 value={item.fontSize?.toString()}
                 onValueChange={(value: string) => {
@@ -229,7 +242,7 @@ export const TextOverlay = ({
                   ))}
                 </SelectContent>
               </Select> */}
-              <GoogleFontSelect
+            {/* <GoogleFontSelect
                 disabled={disable}
                 value={item.font}
                 onValueChange={(value: string) => {
@@ -238,8 +251,8 @@ export const TextOverlay = ({
                     font: value,
                   });
                 }}
-              />
-            </div>
+              /> */}
+            {/* </div> */}
           </>
         ))}
         <button

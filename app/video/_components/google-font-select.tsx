@@ -40,6 +40,7 @@ export const GoogleFontSelect = ({
           .filter((font: FontOption) => font.files.regular)
           .slice(0, 100);
         setFonts(popularFonts);
+        await loadFont(popularFonts);
       } catch (error) {
         console.error("Error fetching Google Fonts:", error);
       }
@@ -49,26 +50,27 @@ export const GoogleFontSelect = ({
   }, []);
 
   // Load font when it's needed
-  const loadFont = async (fontFamily: string) => {
-    if (loadedFonts.has(fontFamily)) return;
-
+  const loadFont = async (fonts: FontOption[]) => {
     try {
-      const font = fonts.find((f) => f.family === fontFamily);
-      if (!font) return;
-
-      const fontFace = new FontFace(fontFamily, `url(${font.files.regular})`);
-      await fontFace.load();
-      document.fonts.add(fontFace);
-      setLoadedFonts((prev) => new Set(prev).add(fontFamily));
+      //   const font = fonts.find((f) => f.family === fontFamily);
+      //   if (!font) return;
+      await Promise.all(
+        fonts.map(async (x) => {
+          const fontFace = new FontFace(x.family, `url(${x.files.regular})`);
+          await fontFace.load();
+          document.fonts.add(fontFace);
+          setLoadedFonts((prev) => new Set(prev).add(x.family));
+        })
+      );
     } catch (error) {
       console.error("Error loading font:", error);
     }
   };
 
   // Load font when hovering over option
-  const handleFontHover = (fontFamily: string) => {
-    loadFont(fontFamily);
-  };
+  //   const handleFontHover = () => {
+  //     loadFont();
+  //   };
 
   return (
     <Select disabled={disabled} value={value} onValueChange={onValueChange}>
@@ -80,7 +82,7 @@ export const GoogleFontSelect = ({
           <SelectItem
             key={family}
             value={family}
-            onMouseEnter={() => handleFontHover(family)}
+            // onMouseEnter={() => handleFontHover(family)}
             style={{ fontFamily: loadedFonts.has(family) ? family : "inherit" }}
           >
             {family}
